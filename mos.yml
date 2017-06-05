@@ -1,0 +1,11 @@
+author: mongoose-os
+description: Setup WiFi via Web UI
+version: 1.0
+tags:
+  - c
+  - wifi
+sources:
+  - src
+filesystem:
+  - fs
+skeleton_version: 2017-05-18
