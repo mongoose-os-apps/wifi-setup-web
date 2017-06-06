@@ -17,6 +17,4 @@
 - Point your browser to http://192.168.4.1
 - You'll see a simple form to configure WiFi network & password
 
-<p align="center">
   ![Screenshot](shot.png)
-</p>
