@@ -2,9 +2,9 @@ author: mongoose-os
 description: Setup WiFi via Web UI
 version: 1.0
 
-libs_version: ${mos_version}
-modules_version: ${mos_version}
-mongoose_os_version: ${mos_version}
+libs_version: ${mos.version}
+modules_version: ${mos.version}
+mongoose_os_version: ${mos.version}
 
 sources:
   - src
