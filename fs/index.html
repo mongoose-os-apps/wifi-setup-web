@@ -15,6 +15,7 @@
     min-height: 7em; white-space: pre; padding: 0.5em; overflow: auto;
   }
 </style>
+<script src="zepto.min.js"></script>
 
 </head>
 <body>
@@ -31,7 +32,31 @@
     via simple Web UI.</p>
   	<p>This page communicates with the device via
       <a href="https://mongoose-os.com/docs/#/rpc/">Mongoose OS RPC mechanism</a>
-      using HTTP/RESTful as a transport protocol.</p>
+      using HTTP/RESTful as a transport protocol. A small JavaScript library,
+      <a href="http://zeptojs.com/">zepto</a>, is used as a drop-in replacement
+      for jQuery, for making AJAX calls to the device.
+    </p>
+
+    <p>Open <code>fs/index.html</code>, or right-click on this page and 
+      choose "view source".</p>
+
+    <p>
+      First, this web page makes a call to the
+      <code>http://DEVICE_IP/rpc/Config.Get</code> RESTful endpoint, which
+    triggers <code>Config.Get</code> RPC service and returns a large JSON
+    object (click <a target="_blank" href="/rpc/Config.Get">here</a> to see) with full device configuration. From that object, we take
+    WiFi SSID and password, and stick them into the text inputs.
+  </p>
+
+  <p>Second, we install a button click handler, which grabs values from the
+    text inputs, creates a JSON string with the device configuration subtree
+    that <code>Config.Set</code> RPC call expects,
+    and calls a <code>/rpc/Config.Set</code> endpoint.
+  </p>
+
+  <p>Similarly, you can call any other RPC service that device has. Call
+    <code>RPC.List</code> to get a list of all RPC services available.
+  </p>
   </div>
   <div class="row form">
 
@@ -56,62 +81,32 @@
 </div>
 
 <script>
-  var ajax = function(opts) {
-    var xhr = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
-    xhr.onreadystatechange = function() {
-      if (xhr.readyState != 4) return;
-      if (xhr.status == 200) {
-        (opts.success || function() {})(xhr.responseText, xhr);
-      } else {
-        (opts.error || function() {})(xhr.responseText, xhr);
-      }
-    };
-   xhr.open(opts.method || 'GET', opts.url, true);
-   xhr.send(opts.data ? JSON.stringify(opts.data) : '');
-  };
-
-  var e = function(id) {
-    return document.getElementById(id);
-  };
-
   var log = function(msg) {
-    var el = document.createElement('span');
-    el.innerHTML = msg + '\n';
-    e('result').appendChild(el);
-  };
-
-  e('save').onclick = function() {
-    log('Calling /rpc/Config.Set  ...');
-    ajax({
-      url: '/rpc/Config.Set',
-      method: 'POST',
-      error: function(data, xhr) {
-        console.log(xhr);
-        log('Error: ' + xhr.responseError);
-      },
-      data: {config: {wifi: {sta: {enable: true, ssid: e('ssid').value, pass: e('pass').value}}}},
-      success: function(data, xhr) {
-        log('Success. Saving and rebooting ...');
-        ajax({
-          url: '/rpc/Config.Save',
-          method: 'POST',
-          data: {reboot: true},
-        });
-      },
-    })
+    $('<span/>').html(msg + '\n').appendTo('#result')
   };
 
   log('Calling /rpc/Config.Get ...');
-  ajax({
+  $.ajax({
     url: '/rpc/Config.Get',
-    success: function(data, xhr) {
-      log('Result: ' + data);
-      try {
-        var o = JSON.parse(data);
-        e('ssid').value = o.wifi.sta.ssid;
-        e('pass').value = o.wifi.sta.pass;
-      } catch (e) {}
-    }
+    success: function(data) {
+      log('Result: ' + JSON.stringify(data));
+      $('#ssid').val(data.wifi.sta.ssid);
+      $('#pass').val(data.wifi.sta.pass);
+    },
+  });
+
+  $('#save').on('click', function() {
+    log('Calling /rpc/Config.Set  ...');
+    $.ajax({
+      url: '/rpc/Config.Set',
+      data: JSON.stringify({config: {wifi: {sta: {enable: true, ssid: $('#ssid').val(), pass: $('#pass').val()}}}}),
+      type: 'POST',
+      // contentType: 'application/json',
+      success: function(data) {
+        log('Success. Saving and rebooting ...');
+        $.ajax({url: '/rpc/Config.Save', type: 'POST', data: JSON.stringify({"reboot": true})});
+      },
+    })
   });
 
 </script>
